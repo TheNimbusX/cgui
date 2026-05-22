@@ -11,18 +11,6 @@ equipment: machine tools, automation, factory components. They place a request,
 receive a commercial proposal and an invoice, pay, and receive the goods. The
 cabinet shows that journey.
 
-A customer has very few records — most of their working history with the company
-fits on one screen:
-
-| Requests per customer | Share of customers |
-|---|---|
-| 2–3 | ~95% |
-| 5–30 | ~5% |
-| up to 200–250 | <0.01% |
-
-Because the data is small, everything a customer can see can be loaded at once,
-and the app can stay simple — no heavy data layer, no per-page loading states.
-
 ---
 
 ## 2. Product vision
@@ -30,42 +18,34 @@ and the app can stay simple — no heavy data layer, no per-page loading states.
 This is the agreed product intent. The specific UX is the developer's choice;
 this section defines the spirit and the business meaning.
 
-**Core idea.** This is a status tracker in the spirit of Wise or PayPal, not a
+**Core idea.** This is a status tracker in the spirit of Wise or PayPal, not a part of a heavy
 CRM. The customer's mental model is "I sent a request — where is it and how much
 do I owe?" The cabinet answers that in a single glance.
 
 1. **The request is the only thing to navigate.** Invoice, order, shipping, and
-   UPD have no standalone meaning for the customer — they always live inside a
+   UPD have no standalone meaning for the customer — they live inside a
    request. So there is one list of requests, and everything else opens from
-   within a request. At most, "Invoices" / "Orders" can be lens-filters for the
-   rare customer with 30+ requests.
+   within a request.
 
-2. **Home is the request feed, and it is also the dashboard.** 95% of customers
-   have 2–3 requests — for them a "dashboard with blocks" and a "request list"
-   are the same thing. A request card shows: what was ordered (brief), a status
-   tracker, money (billed / paid / balance), and the next expected step.
+2. **Home is the dashboard.** Most of customers
+   have 2–3 active requests. The dashboard page might conver 90% needs of customers. 
+   A request card might show: what was ordered (brief), a status
+   tracker, money (billed / paid), and the next expected step.
 
 3. **A request opens in full detail** — all of its data on one screen.
 
-4. **Status is a progress bar.** The customer sees four statuses as a step
+4. **Status is a progress bar.** The customer sees several notable statuses as a step
    tracker, like parcel tracking or a Wise transfer. They always see where the
    request is and what comes next.
 
 5. **Money is what's on the invoice.** The headline numbers are the invoice
-   total, the amount paid, and the balance. The accounting breakdown sits behind
+   total, the amount paid. The accounting breakdown sits behind
    a "show more" control (progressive disclosure).
 
-6. **The archive is off the main path.** Completed and cancelled requests fold
-   into a feed filter, fetched only if the customer opens it.
+6. **Requests list.** The requests list shows all active requests. User can switch tab to see completed and cancelled requests.
 
-7. **The cabinet renders from data held in memory.** State loads on entry and
-   the screens render from memory. The dataset is tiny — this is why the
-   architecture can stay simple, with no heavy loading layer and no per-page
-   spinners.
-
-**In summary — three screens:** the request feed (home), the request detail, and
-the profile. Plain language, no legal jargon; PDF documents are offered for
-download, not paraphrased.
+**In summary — three screens:**: home (dashboard, customer account, summary widgets), the request list, the request page. 
+Plain language, no legal jargon;
 
 ---
 
@@ -89,16 +69,25 @@ download, not paraphrased.
 - **Authentication and authorization are out of scope for this document.** The
   customer already arrives with an HTTP-only cookie that the backend accepts. The
   cabinet does not manage the cookie and does not implement a login form.
-- The customer is a `User` linked one-to-one with a `Customer`. The cabinet
-  always works in the context of a single customer.
+  
+  In case if backend returns 401, the cabinet redirects to the login page `https://id.snab.work`.
+  After successful login, the cabinet redirects back to the original page.
+
+  In case if backend returns 403, the cabinet redirects to the access denied page `/access-denied`.
+  The access denied page shows a message that the customer is not allowed to access the action requested.
+
+- The customer is a `User` linked one-to-one with a `Customer`. The cabinet works in the context of a single customer.
+
 - The server identifies the customer from the cookie session. The cabinet query
   (section 8) takes no customer ID — the customer comes from the session.
+
 - The backend returns only this customer's data, already filtered to the fields
   the customer is allowed to see.
+
 - **Session expiry.** When a request fails because the session is missing or
   expired (HTTP 401, or a GraphQL authentication error), the cabinet redirects to
   an external login URL owned by the surrounding system — it has no login form of
-  its own. The exact URL is still to be provided (section 15).
+  its own. The exact URL should be configured in the environment variables.
 
 ---
 
@@ -108,7 +97,7 @@ This document describes primarily **Stage 1**.
 
 | Stage | Contents |
 |---|---|
-| **Stage 1** | Read-only cabinet: the customer queries and reads their requests and documents. Goal: ship a working cabinet quickly. |
+| **Stage 1** | Read-only cabinet: the customer queries and reads their requests and documents. Goal: ship a working cabinet, freeze design conception and UI/UX decisions. |
 | **Stage 2** | Mutations / interactivity: request creation (form + first mutations), editing customer phone numbers. |
 | **Stage 3** | Features: accept/reject a proposal and confirm an invoice; edit customer account details; customer↔manager chat; call-reminder notifications; questionnaires (quiz); event-driven notifications. |
 | After Stage 3 | Internationalisation (i18n). |
@@ -173,35 +162,41 @@ How the documents map to backend entities:
 
 ## 7. Request status
 
-The backend reduces its internal request pipeline to **four customer-facing
-statuses** and returns the result in the `customerStatus` field. The cabinet
-renders these four as a step tracker.
+| code | name | description |
+| :--- | :--- | :--- |
+| 1 | отменена | Заявка отменена |
+| 10 | формируется | Заявка создана и ожидает формирования для отправки поставщикам |
+| 11 | восстановлена | Заявка восстановлена |
+| 20 | подготовка КП | Отправлен запрос КП поставщикам |
+| 30 | уточнения клиенту | Отправлены уточнения клиенту |
+| 40 | уточнения поставщику | Отправлены уточнения поставщику |
+| 50 | отправлено КП | Отправлен КП клиенту |
+| 60 | отправлен счет | Отправлен счет клиенту |
+| 70 | заказан | Отправлен заказ поставщику |
+| 80 | частично в пути | Создан груз на часть товаров по заказу |
+| 90 | в пути | Создан груз со всеми товарами по заказу |
+| 100 | частично отгружен | Создано УПД на часть товаров по заказу |
+| 110 | отгружен | Создано УПД со всеми товарами по заказу |
+| 120 | завершен | Заказ доставлен клиенту |
 
-| `customerStatus` | Step label | Meaning to the customer |
-|---|---|---|
-| `processing` | Request in progress | We are working on the request. |
-| `proposal` | Proposal ready | A proposal or invoice is ready; awaiting payment. |
-| `delivery` | Order and delivery | Paid; the goods are on their way. |
-| `done` | Completed | Delivered. |
-
-`isCancelled` is a separate boolean. A cancelled request can carry any
-`customerStatus`, so show cancellation as its own state — not as a step on the
-tracker. Cancelled and completed requests live in the archive (section 11).
-
----
+Cancelled and completed requests live in the archive (section 11).
+In case if you need to make hardcoded definitions based on the code, you can resolve it by the following function:
+```typescript
+const code = parseInt(status.id, 10) << 32;
+```
 
 ## 8. The data
 
-The cabinet's data comes from a single GraphQL query: the signed-in customer and
-their requests, with every document nested inside each request.
+The cabinet's data mostly based on quering the `Request` and `Customer` entities. 
+The signed-in customer and their requests, with every document nested inside each request are the main entities.
 
-The query is supplied as two fragments in the `queries/` folder:
+The query might be supplied with two following fragments in the `queries/` folder:
 
 - `queries/CustomerAggregate.gql` — the customer.
 - `queries/RequestAggregate.gql` — one request with its proposals, invoices,
   orders, shipments, and UPDs.
 
-Compose them into the cabinet query:
+For example, you can compose them into the single query:
 
 ```graphql
 query CustomerCabinet {
@@ -215,27 +210,16 @@ types for every entity are in the `schema/` folder.
 
 `productID` and `requestID` inside `shippingProducts`, `updProducts`, and
 `updRequests` are foreign keys — keep them for client-side joins (one UPD may
-cover several requests).
+cover several customer's requests).
 
-### 8.1. New backend work
+### 8.1. Will be added to the backend schema
 
 `RequestAggregate` already uses three things the backend does not expose yet.
 They need to be added to the GraphQL schema:
 
 ```graphql
-"The four customer-facing request statuses (section 7)."
-enum CustomerRequestStatus {
-  processing
-  proposal
-  delivery
-  done
-}
 
 extend type Request {
-  "Customer-facing status, computed by the backend from the internal pipeline."
-  customerStatus: CustomerRequestStatus!
-  "Whether the request is cancelled. Independent of customerStatus."
-  isCancelled: Boolean!
   "Commercial proposals (КП) for this request."
   proposals: [Proposal!]!
 }
@@ -277,7 +261,7 @@ request may have no proposal yet, so the cabinet must handle an empty
 
 A full sample payload for the `CustomerCabinet` query — one customer with two
 requests, one fully populated and one minimal — is in
-[`examples/aggregate-response.json`](../examples/aggregate-response.json). Use it
+[`examples/cabinet-response.json`](../examples/cabinet-response.json). Use it
 to build the UI against before the backend resolver exists.
 
 ---
@@ -314,11 +298,12 @@ total = Σ line   over line items where active == true
 Sum only the line items where `active == true`; inactive items do not count.
 Format the total in the invoice currency.
 
+Invoice helpers examples are in the `examples/invoice.ts` file.
+
 ### Currency invariant
 
 All line items within a single invoice share the same `currency`. The total and
-its formatting rely on this. Confirmation that the backend enforces it is an
-open item (section 15).
+its formatting rely on this.
 
 ### Payments
 
@@ -329,42 +314,28 @@ Each `InvoicePayment` carries:
 - `paidPercent` — this payment's share of the invoice total, as a percent.
 - `paidInput` — the amount paid, always in RUB.
 
-Overall payment progress across all payments is `invoice.paid` (a percent,
+Overall payment progress aggregated across all payments is `invoice.paid` (a percent,
 0–100).
 
 ### EUR invoices — the money triplet
 
-The request card and detail view show a "billed / paid / balance" money triplet
-(section 11). For a RUB invoice this is straightforward. A EUR invoice has a
-currency mismatch: its total is in EUR, but payments (`paidInput`) are always in
-RUB. The triplet must not mix currencies:
+The request card or request detail view shows a
+"billed amount / paid amount / paid percent" money triplet (section 11). For a
+RUB invoice this is straightforward. A EUR invoice has a currency mismatch: its
+total is in EUR, but payments (`paidInput`) are always in RUB. The triplet must
+not mix currencies:
 
-- **Billed:** the computed total, in the invoice currency (EUR).
-- **Paid:** `invoice.paid` as a percent (e.g. "50% paid") — no conversion.
-- **Balance:** `total × (100 − paid) / 100`, in the invoice currency (EUR).
+- **Billed amount:** the computed total, in the invoice currency (EUR).
+- **Paid amount:** the amount paid, in RUB.
+- **Paid percent:** `invoice.paid` as a percent (e.g. "50% paid").
 
-If the product owner wants a different presentation for EUR invoices (for
-example, the RUB equivalent of the balance), that is an open item (section 15).
-
+All items of invoice share one currency.
 ---
 
 ## 10. Data loading
 
-The cabinet loads its data with the `CustomerCabinet` query (section 8). The
-dataset is tiny (section 1) — even a full refetch on every navigation is cheap.
-
 **Caching** is the developer's call; a standard GraphQL client with a normalized
 cache is all that is needed.
-
-**Refresh policy for Stage 1:** load on entry, and refetch after a customer
-action (for example, after a Stage 2 mutation). No background polling.
-
-**Consequence:** an idle open tab shows stale data until the next navigation or
-action. Real-time freshness (push / WebSocket) is a Stage 3 topic (section 12).
-
-**Archive:** for a typical customer all requests load at once. Paging or
-lazy-loading the archive is worth it only for the rare customer with hundreds of
-requests (<0.01% — section 1).
 
 ---
 
@@ -376,33 +347,35 @@ a fourth screen. The specific UX is the developer's choice.
 
 ### 11.1. Home — request feed
 
-A feed of request cards, which is also the dashboard. Each card shows:
+Home is the customer's dashboard.
 
-- What was ordered — a brief product description.
-- A 4-step status tracker (section 7): processing → proposal → delivery → done,
-  with the current step marked.
-- A money summary: billed / paid / balance.
-- The next expected step (e.g. "awaiting payment", "goods in transit").
+- The customer sees all their active requests in one place.
+- For each request the customer can tell, at a glance:
+  - what was ordered — a brief product description;
+  - where the request stands — its position on the 4-step status tracker
+    (section 7): processing → proposal → delivery → done;
+  - the money — billed amount, paid amount, and paid percent;
+  - what happens next (e.g. "awaiting payment", "goods in transit").
+- The customer can open any request from home to see it in full (section 11.2).
+- The customer can switch to completed and cancelled requests (section 11.4).
 
-For 95% of customers, 2–3 cards are the whole cabinet. Compact summary widgets
-(invoices to pay, shipments in transit) are a fine addition.
+For most customers home is the whole cabinet — they have only 2–3 active
+requests.
 
 ### 11.2. Request detail
 
-The request detail is a **single vertical story**, read top to bottom: one
-column, mobile-first, no tab bar.
+The request page is a full render of everything the cabinet holds about one
+request, on a single page or in modal/drawer view.
 
-The story flows: **created → proposal → invoice → order → delivery → completed**.
+- The customer sees the request's progress as a clear sequence of steps —
+  created → proposal → invoice → order → delivery → completed — showing where
+  the request is now, what is already done, and what is still ahead.
+- The customer sees every document of the request: the proposal, the invoice,
+  the order and its shipping, the UPD, and the customer account.
+- The customer sees the money summary for the request, and can open it for the
+  full line-item breakdown.
 
-Each document — proposal, invoice, order / shipping, UPD, and the customer
-account — is embedded inline at the point in the timeline where it appears. The
-customer scrolls down through the life of the request without switching screens.
-
-The accounting line-item table inside the invoice card sits behind a "details ▸"
-disclosure; the card itself shows the money summary.
-
-All documents live inside the request — there are no separate "Invoices" or
-"Orders" screens. See Appendix A for a wireframe.
+See Appendix A for a wireframe.
 
 ### 11.3. Profile
 
@@ -412,8 +385,7 @@ from the most recent request. Stage 1: read-only.
 ### 11.4. Archive
 
 The archive is a **filter on the request feed** that surfaces cancelled and
-completed requests. It is off the main path, collapsed by default, and fetched
-lazily only when the customer opens it.
+completed requests. It is off the main path and collapsed by default.
 
 ---
 
@@ -449,11 +421,9 @@ Not in scope for Stage 1; listed here for context.
 - **UI language — Russian only.** Internationalisation comes after Stage 3.
 - **Mobile-first.** Customers mostly visit from phones: narrow blocks, a
   single-column vertical layout.
-- **Simplicity.** The dataset is small; the cabinet renders from data held in
-  memory, with no heavy loading layer and no per-page spinners.
-- **Guard against duplicate concurrent loads** of the same data.
-- **Offline mode** is not a requirement — basic resilience follows naturally
-  from rendering off data already in memory.
+- **Simplicity.** A customer's whole cabinet fits in one `CustomerCabinet`
+  query, and the dataset is small. A standard GraphQL client with a normalized
+  cache is the entire data layer.
 - **Visual language** is agreed separately with the client; it is not fixed in
   this document.
 
@@ -472,40 +442,11 @@ Things that are not obvious from the schema alone:
   (`RUB`, `EUR`).
 - **One currency per invoice** — all line items of an invoice share one
   `currency` (section 9).
-- **IDs are opaque strings.** Treat them as opaque handles; never parse them. For
-  Stage 2–3 mutations, the exact ID form expected by write operations needs to
-  be confirmed with the backend before Stage 2 (section 15).
 - **Sentinel values.** A `0` timestamp means "no date"; `customerDesiredPrice`
-  of `0` means "not specified"; `customerAccount` may be `null`; absent string
+  of `0` means "not specified"; `customerAccount` may be `null` (before invoice issued); absent string
   fields come back as empty strings.
-- **Status.** `customerStatus` is exactly one of `processing`, `proposal`,
-  `delivery`, `done`. `isCancelled` is an independent boolean (section 7).
 - **GraphQL endpoint.** The endpoint URL comes from an environment variable, set
   by the cabinet's own backend configuration.
-
----
-
-## 15. Open questions
-
-These need answers before or during development:
-
-1. **Login redirect URL** (section 4). On HTTP 401 or a GraphQL auth error the
-   cabinet redirects to an external login page. The surrounding system must
-   provide that URL.
-
-2. **One-currency-per-invoice invariant** (section 9). The total calculation
-   assumes all line items of an invoice share one `currency`. The backend team
-   should confirm this is enforced.
-
-3. **EUR invoice money triplet** (section 9). The spec proposes showing the
-   balance in EUR and progress as a percent. If a different presentation is
-   wanted, the formula must be decided before Stage 1 ships.
-
-4. **Mutation ID form** (section 14). The exact ID form expected by write
-   operations must be confirmed with the backend before Stage 2.
-
-5. **Cabinet query entry point** (section 8). The name and signature of the
-   customer-scoped query are confirmed once the backend implements it.
 
 ---
 
@@ -524,7 +465,6 @@ the developer's choice; this conveys structure and element order only.
 ├────────────────────────────────────────┤
 │  Billed   490 000 ₽                    │
 │  Paid     245 000 ₽  (50%)             │
-│  Balance  245 000 ₽                    │
 ├────────────────────────────────────────┤
 │                                        │
 │  ╔══════════════════════════════════╗  │
@@ -560,7 +500,4 @@ the developer's choice; this conveys structure and element order only.
 └────────────────────────────────────────┘
 ```
 
-The customer scrolls top to bottom through the full life of the request, with
-every document inline. The line-item table inside the invoice card is collapsed
-by default behind the "details ▸" disclosure; the money summary is always
-visible.
+The Request view might be designed in a way that the customer scrolls top to bottom through the full life of the request as an activity timeline; or data could be grouped into tabs, or any other way that will be decided more convinient with the product owner.
