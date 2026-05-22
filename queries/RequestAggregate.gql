@@ -11,8 +11,6 @@
 #
 # Three things below are NEW backend work — they do not exist in
 # schema/ent.graphql yet. See the specification, section "The data".
-#   - customerStatus   (new field on Request)
-#   - isCancelled      (new field on Request)
 #   - proposals        (new edge on Request -> new Proposal type)
 
 fragment RequestAggregate on Request {
@@ -24,8 +22,6 @@ fragment RequestAggregate on Request {
   contractSpecNumber
   contractSpecDate
   customerDesiredPrice
-  customerStatus            # NEW backend field
-  isCancelled               # NEW backend field
 
   manager {
     id
