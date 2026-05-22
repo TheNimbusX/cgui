@@ -1,0 +1,242 @@
+{
+  "customer": {
+    "id": "60412",
+    "created": 1612180800,
+    "updated": 1716200000,
+    "name": "Ivanov Sergey",
+    "company": "Technosnab LLC",
+    "region": "Moscow",
+    "timezone": "+3",
+    "avatar": "",
+    "user": { "email": "s.ivanov@technosnab.ru" },
+    "phones": [
+      {
+        "id": "9001",
+        "number": "+74951234567",
+        "ext": "210",
+        "name": "Ivanov S., procurement",
+        "dept": "Procurement",
+        "isPrimary": true,
+        "isValid": true
+      }
+    ]
+  },
+  "requests": [
+    {
+      "id": "185327",
+      "created": 1714000000,
+      "changed": 1716100000,
+      "contractNumber": "SN-185327",
+      "contractDate": 1714200000,
+      "contractSpecNumber": "1",
+      "contractSpecDate": 1714200000,
+      "customerDesiredPrice": 480000,
+      "customerStatus": "delivery",
+      "isCancelled": false,
+
+      "manager": {
+        "id": "44",
+        "name": "Petrov Andrey",
+        "email": "a.petrov@company.ru",
+        "avatar": ""
+      },
+      "company": {
+        "id": "1",
+        "name": "Snabsystem LLC",
+        "phone": "+74959999999"
+      },
+
+      "customerAccount": {
+        "id": "77001",
+        "buyer": "Technosnab LLC",
+        "inn": "7701234567",
+        "kpp": "770101001",
+        "ogrn": "1127746000000",
+        "okpo": "12345678",
+        "rs": "40702810000000000001",
+        "ks": "30101810400000000225",
+        "bik": "044525225",
+        "bank": "Sberbank PJSC",
+        "formalAddress": "Moscow, Lenina St., 1",
+        "postalAddress": "Moscow, Lenina St., 1",
+        "shippingAddress": "Moscow, warehouse, Varshavskoe hwy 100",
+        "actualAddress": "Moscow, Lenina St., 1",
+        "invoicePrepaidRequired": 50,
+        "noContractRequired": 0,
+        "phone": "+74951234567",
+        "customerName": "Ivanov S.S.",
+        "customerPosition": "Head of Procurement"
+      },
+
+      "productsRequested": [
+        {
+          "id": "p1",
+          "qty": 2,
+          "qtyUnits": "pcs",
+          "sku": "",
+          "model": "ABB ACS580",
+          "brandterm": { "name": "ABB" },
+          "categoryterm": { "name": "Variable frequency drives" }
+        }
+      ],
+
+      "products": [
+        {
+          "id": "p10",
+          "changed": 1714800000,
+          "qty": 2,
+          "qtyUnits": "pcs",
+          "sku": "ACS580-01",
+          "model": "ABB ACS580-01-12A6-4",
+          "shippingTime": "4-6 weeks",
+          "shippingMin": 4,
+          "shippingMax": 6,
+          "weight": 6.5,
+          "status": "ok",
+          "disabled": false,
+          "brandterm": { "name": "ABB" },
+          "categoryterm": { "name": "Variable frequency drives" }
+        }
+      ],
+
+      "proposals": [],
+
+      "invoices": [
+        {
+          "id": "inv-90011",
+          "created": 1714300000,
+          "changed": 1714900000,
+          "invoiceNumber": "INV-90011",
+          "title": "Invoice INV-90011",
+          "actuality": "Invoice valid until 30.05.2026",
+          "shippingTime": "4-6 weeks from payment date",
+          "prepaid": 50,
+          "canceled": 0,
+          "firstPaymentCreated": 1714500000,
+          "paid": 50,
+          "paidInput": 245000,
+          "companyDetails": "Snabsystem LLC, INN 7700000000, account 40702810...",
+          "invoiceProducts": [
+            {
+              "id": "ip1",
+              "created": 1714300000,
+              "active": true,
+              "lineNum": 1,
+              "title": "ABB ACS580-01-12A6-4 variable frequency drive",
+              "qty": 2,
+              "currency": "RUB",
+              "vat": 20,
+              "unit": 245000,
+              "unitNoVat": 204166.67,
+              "line": 490000,
+              "lineNoVat": 408333.33
+            }
+          ],
+          "invoicePayments": [
+            {
+              "id": "pay1",
+              "created": 1714500000,
+              "changed": 1714500000,
+              "paidInput": 245000,
+              "paidPercent": 50,
+              "paymentDate": 1714480000,
+              "transferDate": 1714500000,
+              "transferNumber": "315"
+            }
+          ]
+        }
+      ],
+
+      "orders": [
+        {
+          "id": "ord-7001",
+          "created": 1714600000,
+          "changed": 1716100000,
+          "postDate": 1714600000,
+          "received": "partial",
+          "status": 6,
+          "products": [
+            { "id": "p10", "shippingMin": 4, "shippingMax": 6 }
+          ],
+          "shippings": [
+            {
+              "id": "sh-1",
+              "created": 1715800000,
+              "changed": 1716100000,
+              "received": 1716000000,
+              "sentToClient": 1716100000,
+              "productsIds": "p10",
+              "shippingProducts": [
+                { "id": "shp-1", "productID": "p10" }
+              ],
+              "shippingGroup": {
+                "id": "sg-1",
+                "created": 1715800000,
+                "postDate": 1716050000,
+                "documentsDate": 1716050000,
+                "gtd": "10013160/200526/0012345"
+              }
+            }
+          ]
+        }
+      ],
+
+      "upds": [
+        {
+          "id": "upd-501",
+          "created": 1716100000,
+          "changed": 1716100000,
+          "number": 501,
+          "date": 1716100000,
+          "updProducts": [ { "productID": "p10" } ],
+          "updRequests": [ { "requestID": "185327" } ]
+        }
+      ]
+    },
+
+    {
+      "id": "185940",
+      "created": 1716000000,
+      "changed": 1716050000,
+      "contractNumber": "",
+      "contractDate": 0,
+      "contractSpecNumber": "",
+      "contractSpecDate": 0,
+      "customerDesiredPrice": 0,
+      "customerStatus": "processing",
+      "isCancelled": false,
+
+      "manager": {
+        "id": "44",
+        "name": "Petrov Andrey",
+        "email": "a.petrov@company.ru",
+        "avatar": ""
+      },
+      "company": {
+        "id": "1",
+        "name": "Snabsystem LLC",
+        "phone": "+74959999999"
+      },
+
+      "customerAccount": null,
+
+      "productsRequested": [
+        {
+          "id": "p2",
+          "qty": 10,
+          "qtyUnits": "pcs",
+          "sku": "",
+          "model": "SICK sensor",
+          "brandterm": { "name": "SICK" },
+          "categoryterm": { "name": "Sensors" }
+        }
+      ],
+
+      "products": [],
+      "proposals": [],
+      "invoices": [],
+      "orders": [],
+      "upds": []
+    }
+  ]
+}

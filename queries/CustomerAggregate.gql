@@ -1,0 +1,32 @@
+# The signed-in customer.
+#
+# This fragment is the customer-visible subset of the backend `Customer` type
+# (full type in schema/ent.graphql). Compose it into the cabinet query:
+#
+#   query CustomerCabinet {
+#     customer { ...CustomerAggregate }
+#     requests { ...RequestAggregate }
+#   }
+
+fragment CustomerAggregate on Customer {
+  id
+  created
+  updated
+  name
+  company
+  region
+  timezone
+  avatar
+  user {
+    email
+  }
+  phones {
+    id
+    number
+    ext
+    name
+    dept
+    isPrimary
+    isValid
+  }
+}

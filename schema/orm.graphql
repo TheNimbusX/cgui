@@ -1,0 +1,382 @@
+directive @nodeRef(type: String!) on FIELD_DEFINITION
+
+scalar UUID
+scalar Map
+scalar Time
+scalar Date
+
+"""
+Employee settings type.
+"""
+scalar EmployeeSettings
+
+"""
+Quiz data type.
+"""
+scalar Position
+scalar VariantData
+scalar QuestionNode
+scalar QuizData
+
+"""
+Reschedule schedule mutation input.
+"""
+input RescheduleInput {
+    id: ID!
+    scheduledAt: Time!
+}
+
+"""
+Reschedule schedule mutation result.
+"""
+type RescheduleResult {
+    id: ID!
+    scheduledAt: Time!
+}
+
+
+"""
+Input for creating a comment with body and tags in a single mutation.
+"""
+input CreateCommentMutationInput {
+    entityID: ID!
+    entityType: CommentEntityType!
+    body: String!
+    tagIDs: [ID!]
+}
+
+"""
+Input for updating a comment's body text and tags.
+"""
+input UpdateCommentMutationInput {
+    body: String!
+    tagIDs: [ID!]
+}
+
+
+"""
+Input for creating a variant inline when creating a quiz question.
+Only the variant's own fields are needed; the question linkage is automatic.
+"""
+input CreateQuizVariantInlineInput {
+    name: String!
+    nextQuestionID: ID
+}
+
+"""
+Event bus subscription
+"""
+type Subscription {
+    schedules: ScheduleEvent
+}
+
+type Mutation {
+    createCall(input: CreateCallInput!): Call
+    deleteCall(id: ID!): ID
+
+    createComment(input: CreateCommentMutationInput!): Comment
+    updateComment(id: ID!, input: UpdateCommentMutationInput!): Comment
+    deleteComment(id: ID!): ID
+
+    createEmployee(input: CreateEmployeeInput!): Employee
+    updateEmployee(id: ID!, input: UpdateEmployeeInput!): Employee
+    deleteEmployee(id: ID!): ID
+
+    createPhone(input: CreatePhoneInput!): Phone
+    updatePhone(id: ID!, input: UpdatePhoneInput!): Phone
+    deletePhone(id: ID!): ID
+
+    createSchedule(input: CreateScheduleInput!): Schedule
+    updateSchedule(id: ID!, input: UpdateScheduleInput!): Schedule
+    deleteSchedule(id: ID!): ID
+
+    """
+    Reorder sequence of schedules within an hour in desired order.
+    Returns the new sequence of schedule IDs.
+    """
+    reorderSchedules(employeeID: ID!, hour: Time!, orderedIDs: [ID!]): [ID!]
+    rescheduleSchedules(input: [RescheduleInput!]!): [Schedule!]!
+
+    createCustomerTag(input: CreateCustomerTagInput!): CustomerTag
+    updateCustomerTag(id: ID!, input: UpdateCustomerTagInput!): CustomerTag
+    deleteCustomerTag(id: ID!): ID
+
+    createCustomer(input: CreateCustomerInput!): Customer
+    updateCustomer(id: ID!, input: UpdateCustomerInput!): Customer
+    deleteCustomer(id: ID!): ID
+
+    createCustomerTagLink(
+        input: CreateCustomerTagLinkInput!
+    ): CustomerTagLink
+    deleteCustomerTagLink(id: ID!): ID
+
+    createTag(input: CreateTagInput!): Tag
+    updateTag(id: ID!, input: UpdateTagInput!): Tag
+    deleteTag(id: ID!): ID
+
+    createSettings(input: CreateSettingInput!): Setting
+    updateSettings(id: ID!, input: UpdateSettingInput!): Setting
+    deleteSettings(id: ID!): ID
+
+    # Request mutations
+    createRequest(input: CreateRequestInput!): Request
+    updateRequest(id: ID!, input: UpdateRequestInput!): Request
+    deleteRequest(id: ID!): ID
+
+    # Offer mutations
+    createOffer(input: CreateOfferInput!): Offer
+    updateOffer(id: ID!, input: UpdateOfferInput!): Offer
+    deleteOffer(id: ID!): ID
+
+    # Product mutations
+    createProduct(input: CreateProductInput!): Product
+    updateProduct(id: ID!, input: UpdateProductInput!): Product
+    deleteProduct(id: ID!): ID
+
+    # Term mutations
+    createTerm(input: CreateTermInput!): Term
+    updateTerm(id: ID!, input: UpdateTermInput!): Term
+    deleteTerm(id: ID!): ID
+
+    # Quiz mutations
+    createQuiz(input: CreateQuizInput!): Quiz
+    updateQuiz(id: ID!, input: UpdateQuizInput!): Quiz
+    deleteQuiz(id: ID!): ID
+
+    createQuizAnswer(input: CreateQuizAnswerInput!): QuizAnswer
+    deleteQuizAnswer(id: ID!): ID
+
+    # Quiz Question mutations
+    createQuizQuestion(input: CreateQuizQuestionInput!, variants: [CreateQuizVariantInlineInput!]): QuizQuestion
+    updateQuizQuestion(id: ID!, input: UpdateQuizQuestionInput!): QuizQuestion
+    deleteQuizQuestion(id: ID!): ID
+
+    # Quiz Variant mutations
+    createQuizVariant(input: CreateQuizVariantInput!): QuizVariant
+    updateQuizVariant(id: ID!, input: UpdateQuizVariantInput!): QuizVariant
+    deleteQuizVariant(id: ID!): ID
+
+    """
+    Atomically create a new quiz question with a default variant
+    and link a source variant to it.
+    """
+    createConnectedQuestion(input: CreateConnectedQuestionInput!): CreateConnectedQuestionResult!
+}
+
+"""
+Input for atomically creating a new question with a default variant
+and linking a source variant to it.
+"""
+input CreateConnectedQuestionInput {
+    """Quiz the new question belongs to."""
+    quizID: ID!
+
+    """Display name for the new question."""
+    questionName: String!
+
+    """
+    The variant (on an existing question) whose nextQuestionID will be set
+    to the newly created question.
+    """
+    sourceVariantID: ID!
+
+    """
+    Name for the default variant created on the new question.
+    Defaults to "Вариант ответа" if omitted.
+    """
+    defaultVariantName: String
+
+    """
+    Arbitrary JSON stored in QuizQuestion.data.
+    Used by the frontend to persist the node position on the canvas.
+    """
+    questionData: QuestionNode
+}
+
+"""
+Result of createConnectedQuestion — returns both the new question
+(with its variants) and the updated source variant.
+"""
+type CreateConnectedQuestionResult {
+    """The newly created question with its default variant."""
+    question: QuizQuestion!
+
+    """
+    The source variant updated to point to the new question,
+    with resolved nextQuestion relation.
+    """
+    sourceVariant: QuizVariant!
+}
+
+"""
+Response type for counts attached to the date.
+Generally used for aggregating counts.
+"""
+type DateCount {
+    date: Date!
+    count: Int!
+}
+
+type CommentGroup {
+    entityId: ID!
+    entityType: CommentEntityType!
+    comments: [Comment!]!
+}
+
+"""
+MailMessage is one row from the ss_mail.messages table. The mail database
+is a separate service; this app reads via a manual store and may move the
+mail database to its own server in the future.
+"""
+type MailMessage {
+    id: ID!
+    crmRequestID: ID @nodeRef(type: "Request")
+    crmPartnerID: ID @nodeRef(type: "Partner")
+    crmUserID: ID @nodeRef(type: "Customer")
+    crmManagerID: ID @nodeRef(type: "Employee")
+    uuid: String!
+    direction: String!
+    subject: String!
+    toAddresses: String!
+    fromAddress: String!
+    fromName: String
+    sent: Time!
+    mailboxFolder: String
+    mailboxID: Int
+    mailboxMessageID: String
+    messageID: String!
+    attachmentsCount: Int
+    isRead: Int
+    isProcessed: Int
+    crmFolder: String!
+    assignee: Int
+}
+
+input WhereMailMessages {
+    crmRequestID: ID
+    crmPartnerID: ID
+    crmUserID: ID
+    crmManagerID: ID
+}
+
+"""
+MailContent holds the HTML and plaintext body for a MailMessage.
+"""
+type MailContent {
+    id: ID!
+    messageID: ID @nodeRef(type: "MailMessage")
+    uuid: String!
+    html: String
+    plain: String
+}
+
+
+"""
+MailAttachment is one file attached to a MailMessage.
+"""
+type MailAttachment {
+    id: ID!
+    messageID: ID @nodeRef(type: "MailMessage")
+    origID: String
+    uuid: String
+    mimeType: String
+    mimeEncoding: String
+    contentCharset: String
+    contentEncoding: String
+    filePath: String
+    fileName: String
+    fileExtension: String
+    fileSize: Int
+    fileType: String
+    fileSubtype: String
+    disposition: String
+    fid: String!
+    migrated: Int
+}
+
+"""
+CallRecord is one row from the Asterisk PBX CDR table (ss_extra.cdr).
+The PBX owns writes; this app reads only. Linked to a customer via the
+cdr_uid join table on uniqueID.
+"""
+type CallRecord {
+    id: ID!
+    callDate: Time!
+    callerID: String!
+    src: String!
+    dst: String!
+    dstContext: String!
+    channel: String!
+    dstChannel: String!
+    lastApp: String!
+    lastData: String!
+    duration: Int!
+    billsec: Int!
+    disposition: String!
+    amaFlags: Int!
+    accountCode: String!
+    uniqueID: String!
+    userField: String!
+    userID: ID
+}
+
+
+"""
+Response type for counts attached to the date.
+Generally used for aggregating counts.
+"""
+type ManagerWorkspace {
+    employees: [Employee]!
+    customers: [Customer]!
+    requests: [Request]!
+    schedules: [Schedule]!
+}
+
+"""
+Response type for counts attached to the date.
+Generally used for aggregating counts.
+"""
+type EmployeeState {
+    version: Int!
+    requestIDs: [String!]!
+    customerIDs: [String!]!
+    employee: Employee!
+    employees: [Employee!]!
+    customers: [Customer!]!
+    customerTags: [CustomerTag!]!
+    tags: [Tag!]!
+    requests: [Request!]!
+    statuses: [RequestStatus!]!
+    schedules: [Schedule!]!
+    messages: [MailMessage!]!
+    comments: [Comment!]!
+}
+
+extend type Query {
+    """
+    Counts of schedules for a date and employee.
+    Returns [{date: Date, count: Int}], one for each day in the month.
+    Empty days does not included in the list. Empty response means no schedules for the month.
+    """
+    schedulesMonthDayCounts(employeeID: ID!, month: Date!): [DateCount!]!
+
+    """
+    CurrentEmployee returns current employee information
+    """
+    currentEmployee: Employee!
+
+    """
+    RequestComments combines all comments from request, invoice and customer.
+    """
+    requestComments(requestID: ID!): [CommentGroup!]!
+
+    """
+    CustomerCallRecords returns all call records associated with a customer
+    via the cdr_uid join table.
+    """
+    customerCallRecords(customerID: ID!): [CallRecord!]!
+
+    employeeState(employeeID: ID!, cursor: Int): EmployeeState
+
+    mailMessages(where: WhereMailMessages!): [MailMessage]
+}
